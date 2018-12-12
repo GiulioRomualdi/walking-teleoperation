@@ -308,12 +308,22 @@ bool OculusModule::configure(yarp::os::ResourceFinder &rf)
 	}
 
 	// configure fingers retargeting
+	yarp::sig::Vector fingersMax(7);
+	yarp::sig::Vector fingersMin(7);
+
+	for(int i = 0; i < 7; i++)
+	{	    
+	    fingersMax(i) = m_maxJointsPosition(i + 3);
+	    fingersMin(i) = m_minJointsPosition(i + 3);
+	}
+      
 	m_leftHandFingers = std::make_unique<FingersRetargeting>();
 	yarp::os::Bottle& leftFingersOptions = rf.findGroup("LEFT_FINGERS_RETARGETING");
 	if (!leftFingersOptions.isNull())
 	{
+
 		leftFingersOptions.append(generalOptions);
-		if (!m_leftHandFingers->configure(leftFingersOptions))
+		if (!m_leftHandFingers->configure(leftFingersOptions, fingersMin, fingersMax))
 		{
 			yError() << "[configure] Unable to initialize the left fingers retargeting.";
 			return false;
@@ -328,7 +338,7 @@ bool OculusModule::configure(yarp::os::ResourceFinder &rf)
 	if (!rightFingersOptions.isNull())
 	{
 		rightFingersOptions.append(generalOptions);
-		if (!m_rightHandFingers->configure(rightFingersOptions))
+		if (!m_rightHandFingers->configure(rightFingersOptions, fingersMin, fingersMax))
 		{
 			yError() << "[configure] Unable to initialize the right fingers retargeting.";
 			return false;
@@ -568,8 +578,6 @@ bool OculusModule::getFeedbacks()
 	if (playerOrientation != NULL)
 		m_playerOrientation = (*playerOrientation)(0);
 
-	yInfo() << "Player orientation: " << m_playerOrientation;
-
 	if (!m_transformClient->getTransform("loculus", "mobile_base_body_link", m_loculus_T_rootFixed))
 	{
 		yError() << "Unable to evaluate the loculus to mobile_base_body_link transformation";
@@ -656,9 +664,9 @@ bool OculusModule::updateModule()
 		if (m_fingerCommands(1) == 1.0)
 			m_rightHandFingers->openHand();
 
-		if (!m_qDesired.setSubvector(3 + 7, m_rightHandFingers->fingerPosition()))
+		if (!m_qDesired.setSubvector(3, m_rightHandFingers->fingerPosition()))
 		{
-			yError() << "[updateModule] Unable to add the desired left hand fingers.";
+			yError() << "[updateModule] Unable to add the desired right hand fingers.";
 			return false;
 		}
 	}
@@ -673,7 +681,7 @@ bool OculusModule::updateModule()
 
 		if (!m_qDesired.setSubvector(3, m_leftHandFingers->fingerPosition()))
 		{
-			yError() << "[updateModule] Unable to add the desired right hand fingers.";
+			yError() << "[updateModule] Unable to add the desired left hand fingers.";
 			return false;
 		}
 	}
@@ -700,9 +708,7 @@ bool OculusModule::updateModule()
 	return false;
     }
 
-	yInfo() << "m_qDesired: " << m_qDesired.toString();
-
-	//saturate move me in a function
+    //saturate move me in a function
 	yarp::sig::Vector qDesiredSaturated(m_qDesired.size());
 	double threshold = 5;
 	for (int i = 0; i < m_qDesired.size(); i++)
@@ -715,6 +721,9 @@ bool OculusModule::updateModule()
 			qDesiredSaturated(i) = m_qDesired(i);
 	}
 
+
+	yInfo() << m_qDesired.toString();
+	
 	// move the robot
 	if (!setDirectPositionReferences(m_qDesired))
 	{
@@ -780,7 +789,6 @@ bool OculusModule::updateModule()
 		cmd.addDouble(x);
 		cmd.addDouble(y);
 		m_Joyrpc.write(cmd, outcome);
-		yInfo() << "x is " << x << "and y is " << y;
 	}
 
 	return true;

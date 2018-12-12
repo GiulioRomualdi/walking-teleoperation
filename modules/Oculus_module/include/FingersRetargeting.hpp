@@ -42,7 +42,9 @@ public:
      * @param rf is the reference to a resource finder object.
      * @return true in case of success and false otherwise.
      */
-    bool configure(const yarp::os::Searchable &config);
+     bool configure(const yarp::os::Searchable &config,
+		    const yarp::sig::Vector &minLim,
+		    const yarp::sig::Vector &maxLim);
 
     /**
      * Close the hand

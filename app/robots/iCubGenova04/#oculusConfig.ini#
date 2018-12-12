@@ -4,19 +4,13 @@ name                    oculusRetargeting
 robot                   icub
 
 #joints_list             ("neck_pitch", "neck_roll", "neck_yaw")
-#remote_control_boards   ("head")
+
  
-# joints_list             ("neck_pitch", "neck_roll", "neck_yaw",
-#                          "l_thumb_proximal", "l_thumb_distal", "l_index_proximal", "l_index-distal", "l_middle-proximal", "l_middle-distal", "l_little-fingers",
-#                          "r_thumb_proximal", "r_thumb_distal", "r_index_proximal", "r_index-distal", "r_middle-proximal", "r_middle-distal", "r_little-fingers")
-
-# remote_control_boards   ("head", "left_arm", "right_arm")
-
 joints_list             ("neck_pitch", "neck_roll", "neck_yaw",
+                         "l_thumb_proximal", "l_thumb_distal", "l_index_proximal", "l_index-distal", "l_middle-proximal", "l_middle-distal", "l_little-fingers",
                          "r_thumb_proximal", "r_thumb_distal", "r_index_proximal", "r_index-distal", "r_middle-proximal", "r_middle-distal", "r_little-fingers")
 
-remote_control_boards   ("head", "right_arm")
-
+remote_control_boards   ("head", 'left_
 
 # ports
 leftHandPosePort        /leftHandPose:o
@@ -36,7 +30,7 @@ samplingTime                  0.05
 
 # include fingers parameters
 
-#[include LEFT_FINGERS_RETARGETING "leftFingersRetargetingParams.ini"]
+[include LEFT_FINGERS_RETARGETING "leftFingersRetargetingParams.ini"]
 [include RIGHT_FINGERS_RETARGETING "rightFingersRetargetingParams.ini"]
 
 # include hand parameters

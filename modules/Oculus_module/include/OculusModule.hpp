@@ -28,6 +28,7 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/dev/PreciselyTimed.h>
+#include <yarp/os/RpcClient.h>
 
 #include "HeadRetargeting.hpp"
 #include "HandRetargeting.hpp"

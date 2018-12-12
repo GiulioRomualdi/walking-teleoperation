@@ -10,8 +10,9 @@
 #include "FingersRetargeting.hpp"
 #include "Utils.hpp"
 
-
-bool FingersRetargeting::configure(const yarp::os::Searchable &config)
+bool FingersRetargeting::configure(const yarp::os::Searchable &config,
+				   const yarp::sig::Vector &minLim,
+				   const yarp::sig::Vector &maxLim)
 {
     // TODO do it in a better way
     m_fingersJoints = 7;
@@ -31,7 +32,11 @@ bool FingersRetargeting::configure(const yarp::os::Searchable &config)
 
     m_desiredPosition.resize(m_fingersJoints);
     yarp::sig::Vector buff(m_fingersJoints, 0.0);
-    m_fingerIntegrator = std::make_unique<iCub::ctrl::Integrator>(samplingTime, buff);
+    yarp::sig::Matrix limits(minLim.size(), 2);
+    limits.setCol(0, minLim);
+    limits.setCol(1, maxLim);
+    
+    m_fingerIntegrator = std::make_unique<iCub::ctrl::Integrator>(samplingTime, buff, limits);
     return true;
 }
 
