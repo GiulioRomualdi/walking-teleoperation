@@ -679,7 +679,8 @@ bool OculusModule::updateModule()
 		if (m_fingerCommands(5) == 1.0)
 			m_leftHandFingers->openHand();
 
-		if (!m_qDesired.setSubvector(3, m_leftHandFingers->fingerPosition()))
+		// Make it modular. What's happen if only the left fingers are avaiable??
+		if (!m_qDesired.setSubvector(3 + m_leftHandFingers->fingerPosition().length(), m_leftHandFingers->fingerPosition()))
 		{
 			yError() << "[updateModule] Unable to add the desired left hand fingers.";
 			return false;
