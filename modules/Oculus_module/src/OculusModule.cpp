@@ -568,8 +568,8 @@ bool OculusModule::updateModule()
             // TODO add a visual feedback for the user
             cmd.addString("startWalking");
             m_rpcWalkingClient.write(cmd, outcome);
-            if(outcome.get(0).asBool())
-                m_state = OculusFSM::Running;
+            // if(outcome.get(0).asBool())
+             m_state = OculusFSM::Running;
         }
     }
     yarp::os::Bottle& imagesOrientation = m_imagesOrientationPort.prepare();
@@ -581,13 +581,13 @@ bool OculusModule::updateModule()
     neckRoll = neckEncoders(1);
     neckYaw = neckEncoders(2);
     iDynTree::Rotation root_R_head = HeadRetargeting::forwardKinematics(neckPitch, neckRoll, neckYaw);
-    iDynTree::Rotation inertial_R_root = iDynTree::Rotation::RotZ(m_robotYaw);
+    iDynTree::Rotation inertial_R_root = iDynTree::Rotation::RotZ(-m_playerOrientation);
 
     // inertial_R_head is used to simulate an imu required by the cam calibration application
     // Since the imu mounted on the head of the robot has the x axis pointing backwatd  the
     // RotZ(180) is added
-    iDynTree::Rotation inertial_R_head = iDynTree::Rotation::RotZ(iDynTree::deg2rad(180))
-        * inertial_R_root * root_R_head;
+    // iDynTree::Rotation inertial_R_head = iDynTree::Rotation::RotZ(iDynTree::deg2rad(180))
+        iDynTree::Rotation inertial_R_head = inertial_R_root * root_R_head;
     iDynTree::Vector3 inertial_R_headRPY = inertial_R_head.asRPY();
 
     // todo check the minus
@@ -599,6 +599,8 @@ bool OculusModule::updateModule()
     for (int i = 3; i < 12; i++)
         imagesOrientation.addDouble(0);
 
+    yInfo() << "encoders " << m_head->controlHelper()->timeStamp().getTime();
+    yInfo() <<"yarp " << yarp::os::Time::now();
     m_imagesOrientationPort.setEnvelope(m_head->controlHelper()->timeStamp());
     m_imagesOrientationPort.write();
 
