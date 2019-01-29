@@ -143,6 +143,19 @@ bool VirtualizerModule::configure(yarp::os::ResourceFinder& rf)
     m_oldPlayerYaw = m_oldPlayerYaw * M_PI / 180;
     m_oldPlayerYaw = Angles::normalizeAngle(m_oldPlayerYaw);
 
+    yarp::sig::Vector buff(2, 0.0);
+    m_userPositionIntegrator = std::make_unique<iCub::ctrl::Integrator>(m_dT, buffer);
+
+    double cutFrequency;
+    if(!YarpHelper::getDoubleFromSearchable(rf, "omega_cut_frequency", cutFrequency))
+    {
+        yError() << "[configure] Unable get double from searchable.";
+        return false;
+    }
+
+    yarp::sig::Vector buffOmega(1, 0.0);
+    m_angularVelocityFilter = std::make_unique<iCub::ctrl::FirstOrderLowPassFilter>(cutFrequency, m_dT);
+    m_positionFilter->init(buffOmega);
 
     return true;
 }
@@ -191,21 +204,41 @@ bool VirtualizerModule::updateModule()
         yError() << "Virtualizer misscalibrated or disconnected";
         return false;
     }
+
+    double omega = (Angles::shortestAngularDistance(playerYaw, m_oldPlayerYaw))/m_dT;
+    yarp::sig::Vector omegaVector(1);
+    omegaVector = m_angularVelocityFilter->filt(yarp::sig::Vector(1, omega));
+
     m_oldPlayerYaw = playerYaw;
+
+    double playerYawReverted = -playerYaw;
     // error between the robot orientation and the player orientation
     double angulareError = threshold(Angles::shortestAngularDistance(m_robotYaw, playerYaw));
 
     // get the player speed
     double speedData = (double)(m_cvirtDeviceID->GetMovementSpeed());
 
-    double x = speedData * cos(angulareError) * m_velocityScaling;
-    double y = speedData * sin(angulareError) * m_velocityScaling;
+    double x = speedData * cos(playerYawReverted) * m_velocityScaling;
+    double y = speedData * sin(playerYawReverted) * m_velocityScaling;
+
+    iDynTree::MatrixFixSize<2,2> skewMatrix, rotationMatrix;
+    skewMatrix.zero();
+    skewMatrix(0,1) = -1;
+    skewMatrix(1,0) = 1;
+    rotationMatrix(0,0) = cos(playerYawReverted);
+    rotationMatrix(0,1) = -sin(playerYawReverted);
+    rotationMatrix(1,0) = sin(playerYawReverted);
+    rotationMatrix(0,1) = cos(playerYawReverted);
+
+    iDynTree::VectorFixSize<2> angularAdjustment;
+    iDynTree::toEigen(angularAdjustment) = treshold(omegaVector(0)) * iDynTree::toEigen(rotationMatrix) *
+        iDynTree::toEigen(rotationMatrix) * 0.1;
 
     // send data to the walking module
     yarp::os::Bottle cmd, outcome;
     cmd.addString("setGoal");
-    cmd.addDouble(x);
-    cmd.addDouble(-y);
+    cmd.addDouble(x + angularAdjustment(0));
+    cmd.addDouble(y + angularAdjustment(1));
     m_rpcPort.write(cmd, outcome);
 
     // send the orientation of the player

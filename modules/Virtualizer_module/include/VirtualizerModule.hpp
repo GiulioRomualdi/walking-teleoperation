@@ -11,6 +11,7 @@
 #define RETARGETING_VIRTUALIZER_MODULE_HPP
 
 #include <mutex>
+#include <memory>
 
 // YARP
 #include <yarp/os/Bottle.h>
@@ -18,6 +19,9 @@
 #include <yarp/os/RFModule.h>
 #include <yarp/os/RpcClient.h>
 #include <yarp/sig/Vector.h>
+
+// iCub-ctrl
+#include <iCub/ctrl/pids.h>
 
 #include "CVirt.h"
 #include "CVirtDevice.h"
@@ -44,6 +48,10 @@ private:
                                                                           orientation [-pi +pi]. */
     yarp::os::BufferedPort<yarp::sig::Vector> m_robotOrientationPort; /**< Used to get the robot
                                                                          orientation. */
+
+    std::unique_ptr<iCub::ctrl::Integrator> m_userPositionIntegrator{nullptr}; /**< User Position Integrator. */
+
+    std::unique_ptr<iCub::ctrl::FirstOrderLowPassFilter> m_angularVelocityFilter;
 
     std::mutex m_mutex;
     CVirtDevice* m_cvirtDeviceID = nullptr;
